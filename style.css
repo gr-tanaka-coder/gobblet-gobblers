@@ -1,0 +1,181 @@
+body{
+    text-align:center;
+}
+
+#board{
+    width:320px;
+    margin:auto;
+
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:5px;
+
+    background:#8B5A2B;
+    padding:10px;
+    border-radius:20px;
+}
+
+.cell{
+    width:95px;
+    height:95px;
+
+    border:4px solid #8B5A2B;
+    background:#c58b52;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+#player1Pieces,
+#player2Pieces{
+    background:white;
+    padding:20px;
+    border-radius:20px;
+    box-shadow:0 0 10px gray;
+}
+
+.piece{
+    display:inline-flex;
+    justify-content:center;
+    align-items:center;
+
+    width:50px;
+    height:50px;
+
+    border:2px solid black;
+    border-radius:50%;
+
+    margin:5px;
+
+    cursor:pointer;
+}
+
+.selected{
+    background-color:yellow;
+}
+
+.boardPiece{
+    border-radius:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    margin:auto;
+    font-weight:bold;
+    border:2px solid black;
+}
+
+.player1{
+    background-color:skyblue;
+}
+
+.player2{
+    background-color:pink;
+}
+
+.small{
+    width:30px;
+    height:30px;
+    font-size:15px;
+}
+
+.medium{
+    width:50px;
+    height:50px;
+    font-size:25px;
+}
+
+.large{
+    width:70px;
+    height:70px;
+    font-size:35px;
+}
+
+.boardPiece,
+.piece{
+    border-radius:50% 50% 35% 35%;
+    border:3px solid black;
+    position:relative;
+}
+
+.player1{
+    background:linear-gradient(
+        to bottom,
+        #7ec8ff,
+        #1976d2
+    );
+}
+
+.player2{
+    background:linear-gradient(
+        to bottom,
+        #ff9aa2,
+        #d32f2f
+    );
+}
+
+.small{
+    width:30px;
+    height:30px;
+    font-size:15px;
+}
+
+.medium{
+    width:50px;
+    height:50px;
+    font-size:25px;
+}
+
+.large{
+    width:70px;
+    height:70px;
+    font-size:35px;
+}
+
+.selectedPiece{
+    background-color: yellow !important;
+    border:4px solid orange !important;
+    box-shadow: 0 0 20px gold;
+}
+
+#winnerMessage{
+    font-size:50px;
+    font-weight:bold;
+    color:gold;
+
+    margin:20px;
+
+    display:none;
+}
+
+.eyes{
+    width:40%;
+    height:20%;
+
+    background:
+        radial-gradient(white 40%, transparent 41%) left,
+        radial-gradient(white 40%, transparent 41%) right;
+
+    background-size:40% 100%;
+    background-repeat:no-repeat;
+
+    position:absolute;
+    top:40%;
+    left:30%;
+}
+
+.antenna{
+    width:10px;
+    height:20px;
+
+    background:orange;
+
+    position:absolute;
+
+    top:-15px;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    border-radius:10px;
+}
