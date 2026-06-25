@@ -10,6 +10,14 @@
     <main class="app">
         <header class="game-header">
             <h1>&#12468;&#12502;&#12524;&#12483;&#12488;&#12468;&#12502;&#12521;&#12540;&#12474;</h1>
+            <section class="rules" aria-label="&#12523;&#12540;&#12523;">
+                <h2>&#12304;&#12523;&#12540;&#12523;&#12305;</h2>
+                <p>&#39378;&#12434;&#32294;&#12539;&#27178;&#12539;&#26012;&#12417;&#12395;3&#12388;&#20006;&#12409;&#12383;&#12425;&#21213;&#12385;&#65281;</p>
+                <ul>
+                    <li>&#22823;&#12365;&#12356;&#39378;&#12399;&#23567;&#12373;&#12356;&#39378;&#12395;&#37325;&#12397;&#12425;&#12428;&#12414;&#12377;&#12290;</li>
+                    <li>&#33258;&#20998;&#12398;&#19968;&#30058;&#19978;&#12398;&#39378;&#12399;&#31227;&#21205;&#12391;&#12365;&#12414;&#12377;&#12290;</li>
+                </ul>
+            </section>
             <div class="status-row">
                 <p id="turn" aria-live="polite">&#38738;&#12398;&#30058;&#12391;&#12377;</p>
                 <button id="resetButton" type="button">&#12418;&#12358;&#19968;&#24230;&#36938;&#12406;</button>
@@ -18,7 +26,12 @@
 
         <section class="player-area player-area-blue" aria-label="&#38738;&#12398;&#25345;&#12385;&#39378;">
             <h2>&#38738;&#12398;&#25345;&#12385;&#39378;</h2>
-            <div id="bluePieces" class="reserve"></div>
+            <div class="reserve-grid">
+                <span class="size-row-label">&#23567;</span>
+                <span class="size-row-label">&#20013;</span>
+                <span class="size-row-label">&#22823;</span>
+                <div id="bluePieces" class="reserve"></div>
+            </div>
         </section>
 
         <section class="board-wrap" aria-label="&#30436;&#38754;">
@@ -37,7 +50,12 @@
 
         <section class="player-area player-area-red" aria-label="&#36196;&#12398;&#25345;&#12385;&#39378;">
             <h2>&#36196;&#12398;&#25345;&#12385;&#39378;</h2>
-            <div id="redPieces" class="reserve"></div>
+            <div class="reserve-grid">
+                <span class="size-row-label">&#23567;</span>
+                <span class="size-row-label">&#20013;</span>
+                <span class="size-row-label">&#22823;</span>
+                <div id="redPieces" class="reserve"></div>
+            </div>
         </section>
 
         <p id="winnerMessage" aria-live="polite"></p>

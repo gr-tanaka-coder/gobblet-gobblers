@@ -33,6 +33,7 @@ const WIN_LINES = [
 let currentPlayer = "blue";
 let gameOver = false;
 let selectedPiece = null;
+let winningLine = [];
 let dragState = null;
 let suppressNextClick = false;
 
@@ -84,6 +85,7 @@ function drawBoard() {
     cells.forEach((cell, index) => {
         cell.innerHTML = "";
         cell.disabled = gameOver;
+        cell.classList.toggle("winning-cell", winningLine.includes(index));
 
         const stack = board[index];
         if (stack.length === 0) {
@@ -444,11 +446,12 @@ function removeReservePiece(player, id) {
 }
 
 function finishTurn() {
-    const winner = checkWinner();
+    const result = checkWinner();
 
-    if (winner !== null) {
-        const message = `${PLAYERS[winner].name}\u306e\u52dd\u3061\uff01`;
+    if (result !== null) {
+        const message = `${PLAYERS[result.player].name}\u306e\u52dd\u3061\uff01`;
         gameOver = true;
+        winningLine = result.line;
         document.body.classList.add("is-disabled");
         boardElement.classList.add("is-won");
         boardElement.dataset.winner = message;
@@ -476,7 +479,10 @@ function checkWinner() {
         const playerC = board[c][board[c].length - 1].player;
 
         if (playerA === playerB && playerB === playerC) {
-            return playerA;
+            return {
+                player: playerA,
+                line
+            };
         }
     }
 
@@ -498,6 +504,7 @@ function resetGame() {
     currentPlayer = "blue";
     gameOver = false;
     selectedPiece = null;
+    winningLine = [];
     bluePieces = createReservePieces("blue", 0);
     redPieces = createReservePieces("red", 6);
     board.forEach((stack) => {
