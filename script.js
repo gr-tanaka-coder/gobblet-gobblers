@@ -1,424 +1,300 @@
-let currentPlayer = "○";
-let gameOver = false;
-
-const board = [
-    [], [], [],
-    [], [], [],
-    [], [], []
-];
-
-let player1Pieces = [
-    {size:"小",id:0},
-    {size:"小",id:1},
-    {size:"中",id:2},
-    {size:"中",id:3},
-    {size:"大",id:4},
-    {size:"大",id:5}
-];
-
-let player2Pieces = [
-    {size:"小",id:6},
-    {size:"小",id:7},
-    {size:"中",id:8},
-    {size:"中",id:9},
-    {size:"大",id:10},
-    {size:"大",id:11}
-];
-
-const sizeValue = {
-    "小": 1,
-    "中": 2,
-    "大": 3
+const PLAYERS = {
+    blue: {
+        name: "\u9752"
+    },
+    red: {
+        name: "\u8d64"
+    }
 };
 
+const SIZE_LABELS = {
+    small: "\u5c0f",
+    medium: "\u4e2d",
+    large: "\u5927"
+};
+
+const SIZE_VALUE = {
+    small: 1,
+    medium: 2,
+    large: 3
+};
+
+const WIN_LINES = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6]
+];
+
+let currentPlayer = "blue";
+let gameOver = false;
 let selectedPiece = null;
 
-const player1Area = document.querySelector("#player1Pieces");
-const player2Area = document.querySelector("#player2Pieces");
+const board = Array.from({ length: 9 }, () => []);
+let bluePieces = createReservePieces("blue", 0);
+let redPieces = createReservePieces("red", 6);
+
+const boardElement = document.querySelector("#board");
+const blueArea = document.querySelector("#bluePieces");
+const redArea = document.querySelector("#redPieces");
 const cells = document.querySelectorAll(".cell");
 const turnDisplay = document.querySelector("#turn");
 const resetButton = document.querySelector("#resetButton");
-
-
-// ---------- 盤面表示 ----------
-function drawBoard(){
-
-    cells.forEach((cell,index)=>{
-
-        if(board[index].length === 0){
-            cell.textContent = "";
-        }
-        else{
-            cell.innerHTML = "";
-            const topPiece = board[index][board[index].length - 1];
-            cell.innerHTML = "";
-            const pieceDiv = document.createElement("div");
-            const eyes = document.createElement("div");
-            eyes.classList.add("eyes");
-
-            pieceDiv.appendChild(eyes);
-
-pieceDiv.classList.add("boardPiece");
-pieceDiv.classList.add(topPiece.player === "○" ? "player1" : "player2");
-
-const antenna = document.createElement("div");
-antenna.classList.add("antenna");
-
-pieceDiv.appendChild(antenna);
-
-if(
-    selectedPiece !== null &&
-    selectedPiece.source === "board" &&
-    selectedPiece.index === index
-){
-    pieceDiv.classList.add("selectedPiece");
-}
-
-if(topPiece.size === "小"){
-    pieceDiv.classList.add("small");
-}
-else if(topPiece.size === "中"){
-    pieceDiv.classList.add("medium");
-}
-else{
-    pieceDiv.classList.add("large");
-}
-
-pieceDiv.textContent = "";
-
-cell.appendChild(pieceDiv);
-        }
-
-
-    });
-
-}
-
-
-function drawPieces(){
-
-    player1Area.innerHTML = "";
-    player2Area.innerHTML = "";
-
-    // ---------- ○側 ----------
-    player1Pieces.forEach(piece=>{
-
-        const div = document.createElement("div");
-
-        div.classList.add("piece");
-
-if(piece.size === "小"){
-    div.classList.add("small");
-}
-else if(piece.size === "中"){
-    div.classList.add("medium");
-}
-else{
-    div.classList.add("large");
-}
-
-div.textContent = piece.size;
-
-        if(
-    selectedPiece !== null &&
-    selectedPiece.source === "reserve" &&
-    selectedPiece.id === piece.id
-){
-    div.classList.add("selectedPiece");
-}
-
-        div.addEventListener("click",function(){
-
-            if(gameOver){
-                return;
-            }
-
-            if(currentPlayer !== "○"){
-                return;
-            }
-
-            selectedPiece = {
-    source: "reserve",
-    id: piece.id,
-    size: piece.size
-};
-
-            drawPieces();
-            drawBoard();
-
-        });
-
-        player1Area.appendChild(div);
-
-    });
-
-
-    // ---------- ×側 ----------
-    player2Pieces.forEach(piece=>{
-
-        const div = document.createElement("div");
-
-        div.classList.add("piece");
-
-if(piece.size === "小"){
-    div.classList.add("small");
-}
-else if(piece.size === "中"){
-    div.classList.add("medium");
-}
-else{
-    div.classList.add("large");
-}
-
-div.textContent = piece.size;
-
-        if(
-    selectedPiece !== null &&
-    selectedPiece.source === "reserve" &&
-    selectedPiece.id === piece.id
-){
-    div.classList.add("selectedPiece");
-}
-
-        div.addEventListener("click",function(){
-
-            if(gameOver){
-                return;
-            }
-
-            if(currentPlayer !== "×"){
-                return;
-            }
-
-            selectedPiece = {
-    source: "reserve",
-    id: piece.id,
-    size: piece.size
-};
-
-            drawPieces();
-            drawBoard();
-
-        });
-
-        player2Area.appendChild(div);
-
-    });
-
-}
-// ---------- マスをクリックした時 ----------
-function handleCellClick(index){
-
-    if(gameOver){
-        return;
-    }
-
-    // 駒を持っていない → 自分の駒を持ち上げる
-    if(selectedPiece === null){
-
-        if(board[index].length === 0){
-            return;
-        }
-
-        const topPiece = board[index][board[index].length - 1];
-
-        if(topPiece.player !== currentPlayer){
-            return;
-        }
-
-        selectedPiece = {
-            source:"board",
-            index:index,
-            id:topPiece.id,
-            size:topPiece.size
-        };
-
-        drawBoard();
-        drawPieces();
-
-        return;
-    }
-
-    // 置き先の一番上の駒を確認
-    if(board[index].length > 0){
-
-        const topPiece = board[index][board[index].length - 1];
-
-        // 同じ大きさ以下には置けない
-        if(sizeValue[selectedPiece.size] <= sizeValue[topPiece.size]){
-            return;
-        }
-
-    }
-
-    // 盤面から持ち上げた駒なら元の場所から取り除く
-    if(selectedPiece.source === "board"){
-
-        board[selectedPiece.index].pop();
-
-    }
-
-    // 新しい場所に置く
-    board[index].push({
-    player: currentPlayer,
-    size: selectedPiece.size,
-    id: selectedPiece.id
-});
-
-    // 駒置き場から出した場合
-    if(selectedPiece.source === "reserve"){
-
-        if(currentPlayer === "○"){
-
-            const i = player1Pieces.findIndex(
-    piece => piece.id === selectedPiece.id
-);
-player1Pieces.splice(i,1);
-
-            currentPlayer = "×";
-
-        }
-        else{
-
-            const i = player2Pieces.findIndex(
-    piece => piece.id === selectedPiece.id
-);
-player2Pieces.splice(i,1);
-
-            currentPlayer = "○";
-
-        }
-
-    }
-    else{
-
-        // 盤面の駒を移動した場合
-        if(currentPlayer === "○"){
-            currentPlayer = "×";
-        }
-        else{
-            currentPlayer = "○";
-        }
-
-    }
-
- selectedPiece = null;
-
-drawBoard();
-drawPieces();
-
-const winner = checkWinner();
-
-if(winner !== null){
-
-    gameOver = true;
-
-    turnDisplay.textContent = "";
-
 const winnerMessage = document.querySelector("#winnerMessage");
 
-winnerMessage.textContent = "🏆 " + winner + " の勝ち！ 🏆";
-
-winnerMessage.style.display = "block";
-
-}
-else{
-
-    turnDisplay.textContent = "現在の手番：" + currentPlayer;
-
+function createReservePieces(player, startId) {
+    return ["small", "small", "medium", "medium", "large", "large"].map((size, index) => ({
+        player,
+        size,
+        id: startId + index
+    }));
 }
 
+function pieceImagePath(piece) {
+    return `images/${piece.player}_${piece.size}.png`;
 }
 
-function checkWinner(){
+function createPieceImage(piece, options = {}) {
+    const image = document.createElement("img");
+    image.className = `piece-image piece-${piece.size}`;
+    image.src = pieceImagePath(piece);
+    image.alt = `${PLAYERS[piece.player].name} ${SIZE_LABELS[piece.size]}`;
+    image.draggable = false;
 
-    const lines = [
-        [0,1,2],
-        [3,4,5],
-        [6,7,8],
-        [0,3,6],
-        [1,4,7],
-        [2,5,8],
-        [0,4,8],
-        [2,4,6]
-    ];
+    if (options.selected) {
+        image.classList.add("selectedPiece");
+    }
 
-    for(const line of lines){
+    return image;
+}
 
-        const [a,b,c] = line;
+function drawBoard() {
+    cells.forEach((cell, index) => {
+        cell.innerHTML = "";
+        cell.disabled = gameOver;
 
-        if(
-            board[a].length > 0 &&
-            board[b].length > 0 &&
-            board[c].length > 0
-        ){
-
-            const playerA = board[a][board[a].length-1].player;
-            const playerB = board[b][board[b].length-1].player;
-            const playerC = board[c][board[c].length-1].player;
-
-            if(
-                playerA === playerB &&
-                playerB === playerC
-            ){
-                return playerA;
-            }
-
+        const stack = board[index];
+        if (stack.length === 0) {
+            return;
         }
 
+        const topPiece = stack[stack.length - 1];
+        const isSelected = selectedPiece?.source === "board" && selectedPiece.index === index;
+        cell.appendChild(createPieceImage(topPiece, { selected: isSelected }));
+    });
+}
+
+function drawPieces() {
+    drawReservePieces(blueArea, bluePieces);
+    drawReservePieces(redArea, redPieces);
+}
+
+function drawReservePieces(area, pieces) {
+    area.innerHTML = "";
+
+    pieces.forEach((piece) => {
+        const button = document.createElement("button");
+        const isSelected = selectedPiece?.source === "reserve" && selectedPiece.id === piece.id;
+
+        button.type = "button";
+        button.className = piece.isUsed ? "piece-button piece-slot-empty" : "piece-button";
+        button.ariaLabel = `${PLAYERS[piece.player].name}\u306e${SIZE_LABELS[piece.size]}\u306e\u99d2`;
+        button.disabled = piece.isUsed || gameOver || currentPlayer !== piece.player;
+
+        if (piece.isUsed) {
+            button.ariaHidden = "true";
+            button.tabIndex = -1;
+        } else {
+            button.appendChild(createPieceImage(piece, { selected: isSelected }));
+        }
+
+        button.addEventListener("click", () => {
+            selectReservePiece(piece);
+        });
+
+        area.appendChild(button);
+    });
+}
+
+function selectReservePiece(piece) {
+    if (piece.isUsed || gameOver || currentPlayer !== piece.player) {
+        return;
+    }
+
+    selectedPiece = {
+        source: "reserve",
+        player: piece.player,
+        id: piece.id,
+        size: piece.size
+    };
+
+    render();
+}
+
+function handleCellClick(index) {
+    if (gameOver) {
+        return;
+    }
+
+    if (selectedPiece === null) {
+        selectBoardPiece(index);
+        return;
+    }
+
+    if (!canPlaceOnCell(index)) {
+        return;
+    }
+
+    moveSelectedPieceTo(index);
+    finishTurn();
+}
+
+function selectBoardPiece(index) {
+    const stack = board[index];
+
+    if (stack.length === 0) {
+        return;
+    }
+
+    const topPiece = stack[stack.length - 1];
+    if (topPiece.player !== currentPlayer) {
+        return;
+    }
+
+    selectedPiece = {
+        source: "board",
+        player: topPiece.player,
+        index,
+        id: topPiece.id,
+        size: topPiece.size
+    };
+
+    render();
+}
+
+function canPlaceOnCell(index) {
+    const stack = board[index];
+
+    if (selectedPiece.source === "board" && selectedPiece.index === index) {
+        selectedPiece = null;
+        render();
+        return false;
+    }
+
+    if (stack.length === 0) {
+        return true;
+    }
+
+    const topPiece = stack[stack.length - 1];
+    return SIZE_VALUE[selectedPiece.size] > SIZE_VALUE[topPiece.size];
+}
+
+function moveSelectedPieceTo(index) {
+    if (selectedPiece.source === "board") {
+        board[selectedPiece.index].pop();
+    } else {
+        removeReservePiece(selectedPiece.player, selectedPiece.id);
+    }
+
+    board[index].push({
+        player: currentPlayer,
+        size: selectedPiece.size,
+        id: selectedPiece.id
+    });
+
+    selectedPiece = null;
+}
+
+function removeReservePiece(player, id) {
+    const pieces = player === "blue" ? bluePieces : redPieces;
+    const piece = pieces.find((reservePiece) => reservePiece.id === id);
+
+    if (piece) {
+        piece.isUsed = true;
+    }
+}
+
+function finishTurn() {
+    const winner = checkWinner();
+
+    if (winner !== null) {
+        const message = `${PLAYERS[winner].name}\u306e\u52dd\u3061\uff01`;
+        gameOver = true;
+        document.body.classList.add("is-disabled");
+        boardElement.classList.add("is-won");
+        boardElement.dataset.winner = message;
+        turnDisplay.textContent = "";
+        winnerMessage.textContent = message;
+        render();
+        return;
+    }
+
+    currentPlayer = currentPlayer === "blue" ? "red" : "blue";
+    updateTurnDisplay();
+    render();
+}
+
+function checkWinner() {
+    for (const line of WIN_LINES) {
+        const [a, b, c] = line;
+
+        if (board[a].length === 0 || board[b].length === 0 || board[c].length === 0) {
+            continue;
+        }
+
+        const playerA = board[a][board[a].length - 1].player;
+        const playerB = board[b][board[b].length - 1].player;
+        const playerC = board[c][board[c].length - 1].player;
+
+        if (playerA === playerB && playerB === playerC) {
+            return playerA;
+        }
     }
 
     return null;
-
 }
 
-// ---------- 盤面クリックイベント ----------
-cells.forEach((cell,index)=>{
+function updateTurnDisplay() {
+    document.body.classList.toggle("current-blue", currentPlayer === "blue");
+    document.body.classList.toggle("current-red", currentPlayer === "red");
+    turnDisplay.textContent = `${PLAYERS[currentPlayer].name}\u306e\u756a\u3067\u3059`;
+}
 
-    cell.addEventListener("click",function(){
-
-        handleCellClick(index);
-
-    });
-
-});
-
-
-// ---------- 初期表示 ----------
-drawBoard();
-drawPieces();
-
-resetButton.addEventListener("click",function(){
-
-    currentPlayer = "○";
-    gameOver = false;
-    selectedPiece = null;
-
-    board.forEach(cell => cell.length = 0);
-
-    player1Pieces = [
-    {size:"小",id:0},
-    {size:"小",id:1},
-    {size:"中",id:2},
-    {size:"中",id:3},
-    {size:"大",id:4},
-    {size:"大",id:5}
-];
-
-player2Pieces = [
-    {size:"小",id:6},
-    {size:"小",id:7},
-    {size:"中",id:8},
-    {size:"中",id:9},
-    {size:"大",id:10},
-    {size:"大",id:11}
-];
-
-    turnDisplay.textContent = "現在の手番：○";
-
+function render() {
     drawBoard();
     drawPieces();
+}
 
-winnerMessage.style.display = "none";
+function resetGame() {
+    currentPlayer = "blue";
+    gameOver = false;
+    selectedPiece = null;
+    bluePieces = createReservePieces("blue", 0);
+    redPieces = createReservePieces("red", 6);
+    board.forEach((stack) => {
+        stack.length = 0;
+    });
 
+    document.body.classList.remove("is-disabled");
+    document.body.classList.remove("current-red");
+    document.body.classList.add("current-blue");
+    boardElement.classList.remove("is-won");
+    boardElement.removeAttribute("data-winner");
+    winnerMessage.textContent = "";
+    updateTurnDisplay();
+    render();
+}
+
+cells.forEach((cell, index) => {
+    cell.addEventListener("click", () => {
+        handleCellClick(index);
+    });
 });
+
+resetButton.addEventListener("click", resetGame);
+
+resetGame();

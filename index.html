@@ -1,42 +1,48 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ゴブレットゴブラーズ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>&#12468;&#12502;&#12524;&#12483;&#12488;&#12468;&#12502;&#12521;&#12540;&#12474;</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <main class="app">
+        <header class="game-header">
+            <h1>&#12468;&#12502;&#12524;&#12483;&#12488;&#12468;&#12502;&#12521;&#12540;&#12474;</h1>
+            <div class="status-row">
+                <p id="turn" aria-live="polite">&#38738;&#12398;&#30058;&#12391;&#12377;</p>
+                <button id="resetButton" type="button">&#12418;&#12358;&#19968;&#24230;&#36938;&#12406;</button>
+            </div>
+        </header>
 
-<h1>ゴブレットゴブラーズ</h1>
+        <section class="player-area player-area-blue" aria-label="&#38738;&#12398;&#25345;&#12385;&#39378;">
+            <h2>&#38738;&#12398;&#25345;&#12385;&#39378;</h2>
+            <div id="bluePieces" class="reserve"></div>
+        </section>
 
-<p id="turn">現在の手番：○</p>
+        <section class="board-wrap" aria-label="&#30436;&#38754;">
+            <div id="board">
+                <button class="cell" type="button" data-index="0" aria-label="1&#34892;1&#21015;"></button>
+                <button class="cell" type="button" data-index="1" aria-label="1&#34892;2&#21015;"></button>
+                <button class="cell" type="button" data-index="2" aria-label="1&#34892;3&#21015;"></button>
+                <button class="cell" type="button" data-index="3" aria-label="2&#34892;1&#21015;"></button>
+                <button class="cell" type="button" data-index="4" aria-label="2&#34892;2&#21015;"></button>
+                <button class="cell" type="button" data-index="5" aria-label="2&#34892;3&#21015;"></button>
+                <button class="cell" type="button" data-index="6" aria-label="3&#34892;1&#21015;"></button>
+                <button class="cell" type="button" data-index="7" aria-label="3&#34892;2&#21015;"></button>
+                <button class="cell" type="button" data-index="8" aria-label="3&#34892;3&#21015;"></button>
+            </div>
+        </section>
 
-<button id="resetButton">リセット</button>
+        <section class="player-area player-area-red" aria-label="&#36196;&#12398;&#25345;&#12385;&#39378;">
+            <h2>&#36196;&#12398;&#25345;&#12385;&#39378;</h2>
+            <div id="redPieces" class="reserve"></div>
+        </section>
 
-<h2>○の駒</h2>
-<div id="player1Pieces"></div>
+        <p id="winnerMessage" aria-live="polite"></p>
+    </main>
 
-<div id="board">
-    <div class="cell" data-index="0"></div>
-    <div class="cell" data-index="1"></div>
-    <div class="cell" data-index="2"></div>
-
-    <div class="cell" data-index="3"></div>
-    <div class="cell" data-index="4"></div>
-    <div class="cell" data-index="5"></div>
-
-    <div class="cell" data-index="6"></div>
-    <div class="cell" data-index="7"></div>
-    <div class="cell" data-index="8"></div>
-</div>
-
-<h2>×の駒</h2>
-<div id="player2Pieces"></div>
-
-<script src="script.js"></script>
-
-<div id="winnerMessage"></div>
-
+    <script src="script.js"></script>
 </body>
 </html>
