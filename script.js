@@ -48,6 +48,7 @@ const turnDisplay = document.querySelector("#turn");
 const resetButton = document.querySelector("#resetButton");
 const winnerMessage = document.querySelector("#winnerMessage");
 const DRAG_THRESHOLD = 8;
+const SUPPORTS_POINTER_EVENTS = "PointerEvent" in window;
 const BOARD_PIECE_SIZE_RATIO = {
     small: 0.145,
     medium: 0.2,
@@ -118,7 +119,7 @@ function drawReservePieces(area, pieces) {
             button.tabIndex = -1;
         } else {
             button.appendChild(createPieceImage(piece, { selected: isSelected }));
-            button.addEventListener("pointerdown", (event) => {
+            addDragStartListener(button, (event) => {
                 startDragCandidate(event, {
                     source: "reserve",
                     player: piece.player,
@@ -222,29 +223,41 @@ function startBoardDragCandidate(event, index) {
 }
 
 function startDragCandidate(event, piece) {
-    if (gameOver || piece.player !== currentPlayer || event.button > 0 || event.isPrimary === false) {
+    const point = getEventPoint(event);
+
+    if (
+        point === null ||
+        gameOver ||
+        piece.player !== currentPlayer ||
+        event.button > 0 ||
+        event.isPrimary === false
+    ) {
         return;
     }
 
     dragState = {
         piece,
-        pointerId: event.pointerId,
-        startX: event.clientX,
-        startY: event.clientY,
+        pointerId: point.pointerId,
+        startX: point.x,
+        startY: point.y,
         ghost: null,
         isDragging: false
     };
 
-    event.currentTarget.setPointerCapture?.(event.pointerId);
+    if (event.pointerId !== undefined) {
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+    }
 }
 
 function updateDrag(event) {
-    if (dragState === null || event.pointerId !== dragState.pointerId) {
+    const point = getEventPoint(event);
+
+    if (dragState === null || point === null || point.pointerId !== dragState.pointerId) {
         return;
     }
 
-    const distanceX = event.clientX - dragState.startX;
-    const distanceY = event.clientY - dragState.startY;
+    const distanceX = point.x - dragState.startX;
+    const distanceY = point.y - dragState.startY;
     const distance = Math.hypot(distanceX, distanceY);
 
     if (!dragState.isDragging && distance < DRAG_THRESHOLD) {
@@ -252,21 +265,21 @@ function updateDrag(event) {
     }
 
     if (!dragState.isDragging) {
-        beginDrag(event);
+        beginDrag(point);
     }
 
-    moveDragGhost(event.clientX, event.clientY);
+    moveDragGhost(point.x, point.y);
     event.preventDefault();
 }
 
-function beginDrag(event) {
+function beginDrag(point) {
     dragState.isDragging = true;
     suppressNextClick = true;
     selectedPiece = { ...dragState.piece };
     dragState.ghost = createDragGhost(dragState.piece);
     document.body.classList.add("is-dragging");
     document.body.appendChild(dragState.ghost);
-    moveDragGhost(event.clientX, event.clientY);
+    moveDragGhost(point.x, point.y);
     render();
 }
 
@@ -291,14 +304,16 @@ function moveDragGhost(x, y) {
 }
 
 function finishDrag(event) {
-    if (dragState === null || event.pointerId !== dragState.pointerId) {
+    const point = getEventPoint(event);
+
+    if (dragState === null || point === null || point.pointerId !== dragState.pointerId) {
         return;
     }
 
     const wasDragging = dragState.isDragging;
 
     if (wasDragging) {
-        const cell = findDropCell(event.clientX, event.clientY);
+        const cell = findDropCell(point.x, point.y);
 
         if (cell !== null && canPlaceOnCell(Number(cell.dataset.index))) {
             moveSelectedPieceTo(Number(cell.dataset.index));
@@ -319,7 +334,9 @@ function finishDrag(event) {
 }
 
 function cancelDrag(event) {
-    if (dragState === null || event.pointerId !== dragState.pointerId) {
+    const point = getEventPoint(event);
+
+    if (dragState === null || (point !== null && point.pointerId !== dragState.pointerId)) {
         return;
     }
 
@@ -346,6 +363,52 @@ function consumeSuppressedClick() {
 
     suppressNextClick = false;
     return true;
+}
+
+function getEventPoint(event) {
+    if (event.changedTouches?.length > 0) {
+        const touch = Array.from(event.changedTouches).find(
+            (item) => dragState === null || item.identifier === dragState.pointerId
+        ) ?? event.changedTouches[0];
+
+        return {
+            x: touch.clientX,
+            y: touch.clientY,
+            pointerId: touch.identifier
+        };
+    }
+
+    if (event.touches?.length > 0) {
+        const touch = Array.from(event.touches).find(
+            (item) => dragState === null || item.identifier === dragState.pointerId
+        ) ?? event.touches[0];
+
+        return {
+            x: touch.clientX,
+            y: touch.clientY,
+            pointerId: touch.identifier
+        };
+    }
+
+    if (event.clientX === undefined || event.clientY === undefined) {
+        return null;
+    }
+
+    return {
+        x: event.clientX,
+        y: event.clientY,
+        pointerId: event.pointerId ?? "mouse"
+    };
+}
+
+function addDragStartListener(element, handler) {
+    if (SUPPORTS_POINTER_EVENTS) {
+        element.addEventListener("pointerdown", handler);
+        return;
+    }
+
+    element.addEventListener("mousedown", handler);
+    element.addEventListener("touchstart", handler, { passive: false });
 }
 
 function canPlaceOnCell(index) {
@@ -462,7 +525,7 @@ function resetGame() {
 }
 
 cells.forEach((cell, index) => {
-    cell.addEventListener("pointerdown", (event) => {
+    addDragStartListener(cell, (event) => {
         startBoardDragCandidate(event, index);
     });
 
@@ -471,9 +534,17 @@ cells.forEach((cell, index) => {
     });
 });
 
-window.addEventListener("pointermove", updateDrag, { passive: false });
-window.addEventListener("pointerup", finishDrag);
-window.addEventListener("pointercancel", cancelDrag);
+if (SUPPORTS_POINTER_EVENTS) {
+    window.addEventListener("pointermove", updateDrag, { passive: false });
+    window.addEventListener("pointerup", finishDrag);
+    window.addEventListener("pointercancel", cancelDrag);
+} else {
+    window.addEventListener("mousemove", updateDrag, { passive: false });
+    window.addEventListener("mouseup", finishDrag);
+    window.addEventListener("touchmove", updateDrag, { passive: false });
+    window.addEventListener("touchend", finishDrag);
+    window.addEventListener("touchcancel", cancelDrag);
+}
 
 resetButton.addEventListener("click", resetGame);
 
