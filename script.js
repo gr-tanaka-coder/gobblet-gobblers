@@ -35,6 +35,7 @@ let gameOver = false;
 let selectedPiece = null;
 let winningLine = [];
 let dragState = null;
+let dropTargetIndex = null;
 let suppressNextClick = false;
 
 const board = Array.from({ length: 9 }, () => []);
@@ -48,12 +49,17 @@ const cells = document.querySelectorAll(".cell");
 const turnDisplay = document.querySelector("#turn");
 const resetButton = document.querySelector("#resetButton");
 const winnerMessage = document.querySelector("#winnerMessage");
+const confettiLayer = document.createElement("div");
 const DRAG_THRESHOLD = 8;
 const BOARD_PIECE_SIZE_RATIO = {
     small: 0.145,
     medium: 0.2,
     large: 0.255
 };
+
+confettiLayer.className = "confetti-layer";
+confettiLayer.ariaHidden = "true";
+document.body.appendChild(confettiLayer);
 
 function createReservePieces(player, startId) {
     return ["small", "small", "medium", "medium", "large", "large"].map((size, index) => ({
@@ -86,6 +92,8 @@ function drawBoard() {
         cell.innerHTML = "";
         cell.disabled = gameOver;
         cell.classList.toggle("winning-cell", winningLine.includes(index));
+        cell.classList.toggle("drop-target", dropTargetIndex === index);
+        cell.classList.toggle("drop-target-invalid", dropTargetIndex === index && selectedPiece !== null && !canPlaceOnCell(index, { silent: true }));
 
         const stack = board[index];
         if (stack.length === 0) {
@@ -238,6 +246,7 @@ function startDragCandidate(event, piece) {
 
     dragState = {
         piece,
+        sourceElement: event.currentTarget,
         pointerId: point.pointerId,
         startX: point.x,
         startY: point.y,
@@ -267,6 +276,7 @@ function updateDrag(event) {
     }
 
     moveDragGhost(point.x, point.y);
+    updateDropTarget(point.x, point.y);
     event.preventDefault();
 }
 
@@ -275,6 +285,7 @@ function beginDrag(point) {
     suppressNextClick = true;
     selectedPiece = { ...dragState.piece };
     dragState.ghost = createDragGhost(dragState.piece);
+    dragState.sourceElement?.classList.add("drag-source-hidden");
     document.body.classList.add("is-dragging");
     document.body.appendChild(dragState.ghost);
     moveDragGhost(point.x, point.y);
@@ -311,6 +322,7 @@ function finishDrag(event) {
 
     if (wasDragging) {
         const cell = findDropCell(point.x, point.y);
+        dropTargetIndex = null;
 
         if (cell !== null && canPlaceOnCell(Number(cell.dataset.index))) {
             moveSelectedPieceTo(Number(cell.dataset.index));
@@ -338,11 +350,13 @@ function cancelDrag(event) {
     }
 
     selectedPiece = null;
+    dropTargetIndex = null;
     cleanupDrag();
     render();
 }
 
 function cleanupDrag() {
+    dragState?.sourceElement?.classList.remove("drag-source-hidden");
     dragState?.ghost?.remove();
     dragState = null;
     document.body.classList.remove("is-dragging");
@@ -351,6 +365,18 @@ function cleanupDrag() {
 function findDropCell(x, y) {
     const element = document.elementFromPoint(x, y);
     return element?.closest?.(".cell") ?? null;
+}
+
+function updateDropTarget(x, y) {
+    const cell = findDropCell(x, y);
+    const nextIndex = cell === null ? null : Number(cell.dataset.index);
+
+    if (dropTargetIndex === nextIndex) {
+        return;
+    }
+
+    dropTargetIndex = nextIndex;
+    drawBoard();
 }
 
 function consumeSuppressedClick() {
@@ -403,12 +429,14 @@ function addDragStartListener(element, handler) {
     element.addEventListener("touchstart", handler, { passive: false });
 }
 
-function canPlaceOnCell(index) {
+function canPlaceOnCell(index, options = {}) {
     const stack = board[index];
 
     if (selectedPiece.source === "board" && selectedPiece.index === index) {
-        selectedPiece = null;
-        render();
+        if (!options.silent) {
+            selectedPiece = null;
+            render();
+        }
         return false;
     }
 
@@ -449,7 +477,7 @@ function finishTurn() {
     const result = checkWinner();
 
     if (result !== null) {
-        const message = `${PLAYERS[result.player].name}\u306e\u52dd\u3061\uff01`;
+        const message = `${PLAYERS[result.player].name}\u306e\u52dd\u5229\uff01`;
         gameOver = true;
         winningLine = result.line;
         document.body.classList.add("is-disabled");
@@ -457,6 +485,7 @@ function finishTurn() {
         boardElement.dataset.winner = message;
         turnDisplay.textContent = "";
         winnerMessage.textContent = message;
+        launchConfetti(result.player);
         render();
         return;
     }
@@ -500,6 +529,32 @@ function render() {
     drawPieces();
 }
 
+function launchConfetti(player) {
+    const colors = player === "blue"
+        ? ["#1f70d1", "#55b7ff", "#ffd84d", "#ffffff"]
+        : ["#d73636", "#ff7a7a", "#ffd84d", "#ffffff"];
+
+    confettiLayer.innerHTML = "";
+
+    for (let i = 0; i < 90; i++) {
+        const piece = document.createElement("span");
+        const size = 7 + Math.random() * 9;
+        const duration = 2200 + Math.random() * 1800;
+        const delay = Math.random() * 650;
+
+        piece.className = "confetti-piece";
+        piece.style.setProperty("--x", `${Math.random() * 100}vw`);
+        piece.style.setProperty("--drift", `${-45 + Math.random() * 90}px`);
+        piece.style.setProperty("--spin", `${180 + Math.random() * 720}deg`);
+        piece.style.setProperty("--size", `${size}px`);
+        piece.style.setProperty("--duration", `${duration}ms`);
+        piece.style.setProperty("--delay", `${delay}ms`);
+        piece.style.background = colors[i % colors.length];
+
+        confettiLayer.appendChild(piece);
+    }
+}
+
 function resetGame() {
     currentPlayer = "blue";
     gameOver = false;
@@ -517,6 +572,7 @@ function resetGame() {
     boardElement.classList.remove("is-won");
     boardElement.removeAttribute("data-winner");
     winnerMessage.textContent = "";
+    confettiLayer.innerHTML = "";
     updateTurnDisplay();
     render();
 }

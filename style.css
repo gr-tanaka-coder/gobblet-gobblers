@@ -30,6 +30,10 @@ body.is-dragging {
     user-select: none;
 }
 
+.drag-source-hidden .piece-image {
+    opacity: 0;
+}
+
 body::before {
     content: "";
     position: fixed;
@@ -139,8 +143,8 @@ body.current-red #turn {
     display: none;
     position: fixed;
     left: 50%;
-    bottom: 28px;
-    z-index: 30;
+    bottom: 30px;
+    z-index: 36;
     transform: translateX(-50%);
     min-height: 58px;
     min-width: 180px;
@@ -319,6 +323,20 @@ body.is-disabled #resetButton {
 .winning-cell {
     background: radial-gradient(circle, rgba(255, 224, 76, 0.7), rgba(255, 190, 0, 0.28) 58%, transparent 74%);
     box-shadow: inset 0 0 0 4px rgba(255, 218, 70, 0.85), 0 0 24px rgba(255, 218, 70, 0.8);
+    animation: winGlow 900ms ease-in-out infinite alternate;
+}
+
+.drop-target {
+    background:
+        radial-gradient(ellipse at center, rgba(92, 92, 92, 0.44), rgba(92, 92, 92, 0.28) 58%, transparent 76%);
+    box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.34), inset 0 0 18px rgba(0, 0, 0, 0.16);
+    clip-path: polygon(8% 7%, 92% 7%, 96% 50%, 91% 93%, 9% 93%, 4% 50%);
+}
+
+.drop-target-invalid {
+    background:
+        radial-gradient(ellipse at center, rgba(215, 54, 54, 0.42), rgba(215, 54, 54, 0.25) 58%, transparent 76%);
+    box-shadow: inset 0 0 0 3px rgba(255, 150, 150, 0.58), inset 0 0 18px rgba(120, 0, 0, 0.12);
 }
 
 .cell[data-index="0"] {
@@ -423,11 +441,12 @@ body.is-disabled #resetButton {
 
 .drag-ghost {
     position: fixed;
-    z-index: 50;
+    z-index: 60;
     pointer-events: none;
-    opacity: 0.92;
-    transform: translate(-50%, -50%);
-    filter: drop-shadow(0 14px 10px rgba(0, 0, 0, 0.28));
+    opacity: 0.96;
+    transform: translate(-50%, -58%) scale(1.08);
+    filter: brightness(1.08) drop-shadow(0 26px 18px rgba(0, 0, 0, 0.34));
+    animation: floatPiece 620ms ease-in-out infinite alternate;
 }
 
 .piece-small {
@@ -484,20 +503,26 @@ body.is-disabled #resetButton {
     display: none;
     position: fixed;
     left: 50%;
-    top: 45%;
-    z-index: 30;
-    width: min(78vw, 420px);
-    padding: 18px 22px;
+    top: 42%;
+    z-index: 35;
+    width: min(82vw, 520px);
+    padding: 24px 26px;
     border-radius: 8px;
-    color: #fff8d0;
-    background: rgba(30, 18, 5, 0.78);
-    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
-    font-size: clamp(1.7rem, 7vw, 3.2rem);
+    color: #fff5b8;
+    background:
+        linear-gradient(135deg, rgba(71, 35, 0, 0.94), rgba(28, 18, 4, 0.86)),
+        #3b2604;
+    box-shadow:
+        0 0 0 5px rgba(255, 216, 77, 0.72),
+        0 0 34px rgba(255, 216, 77, 0.74),
+        0 18px 42px rgba(0, 0, 0, 0.34);
+    font-size: clamp(2rem, 8vw, 4rem);
     font-weight: 900;
     line-height: 1.15;
     text-align: center;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.58);
+    text-shadow: 0 3px 0 rgba(0, 0, 0, 0.32), 0 0 18px rgba(255, 216, 77, 0.72);
     transform: translate(-50%, -50%);
+    animation: winnerPop 760ms cubic-bezier(0.2, 1.4, 0.3, 1) both, winnerGlow 820ms ease-in-out infinite alternate;
 }
 
 body.is-disabled #winnerMessage {
@@ -515,6 +540,25 @@ body.is-disabled #winnerMessage {
     overflow: hidden;
     clip: rect(0 0 0 0);
     white-space: nowrap;
+}
+
+.confetti-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 34;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.confetti-piece {
+    position: absolute;
+    left: var(--x);
+    top: -8vh;
+    width: var(--size);
+    height: calc(var(--size) * 1.7);
+    border-radius: 2px;
+    opacity: 0;
+    animation: confettiFall var(--duration) linear var(--delay) forwards;
 }
 
 @media (min-width: 980px) {
@@ -547,5 +591,77 @@ body.is-disabled #winnerMessage {
 
     #winnerMessage {
         grid-area: winner;
+    }
+}
+
+@keyframes winGlow {
+    from {
+        background: radial-gradient(circle, rgba(255, 224, 76, 0.62), rgba(255, 190, 0, 0.24) 58%, transparent 74%);
+        box-shadow: inset 0 0 0 4px rgba(255, 218, 70, 0.78), 0 0 18px rgba(255, 218, 70, 0.64);
+    }
+
+    to {
+        background: radial-gradient(circle, rgba(255, 239, 135, 0.9), rgba(255, 204, 28, 0.42) 60%, transparent 76%);
+        box-shadow: inset 0 0 0 5px rgba(255, 236, 122, 0.95), 0 0 34px rgba(255, 214, 0, 0.95);
+    }
+}
+
+@keyframes floatPiece {
+    from {
+        transform: translate(-50%, -56%) scale(1.06);
+        filter: brightness(1.06) drop-shadow(0 22px 16px rgba(0, 0, 0, 0.3));
+    }
+
+    to {
+        transform: translate(-50%, -62%) scale(1.1);
+        filter: brightness(1.12) drop-shadow(0 30px 20px rgba(0, 0, 0, 0.36));
+    }
+}
+
+@keyframes winnerPop {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.72) rotate(-2deg);
+    }
+
+    72% {
+        transform: translate(-50%, -50%) scale(1.08) rotate(1deg);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    }
+}
+
+@keyframes winnerGlow {
+    from {
+        box-shadow:
+            0 0 0 5px rgba(255, 216, 77, 0.62),
+            0 0 26px rgba(255, 216, 77, 0.56),
+            0 18px 42px rgba(0, 0, 0, 0.34);
+    }
+
+    to {
+        box-shadow:
+            0 0 0 7px rgba(255, 236, 122, 0.92),
+            0 0 46px rgba(255, 216, 77, 0.96),
+            0 18px 42px rgba(0, 0, 0, 0.34);
+    }
+}
+
+@keyframes confettiFall {
+    0% {
+        opacity: 0;
+        transform: translate3d(0, -8vh, 0) rotate(0deg);
+    }
+
+    8% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.95;
+        transform: translate3d(var(--drift), 112vh, 0) rotate(var(--spin));
     }
 }
