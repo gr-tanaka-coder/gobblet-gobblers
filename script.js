@@ -48,7 +48,6 @@ const turnDisplay = document.querySelector("#turn");
 const resetButton = document.querySelector("#resetButton");
 const winnerMessage = document.querySelector("#winnerMessage");
 const DRAG_THRESHOLD = 8;
-const SUPPORTS_POINTER_EVENTS = "PointerEvent" in window;
 const BOARD_PIECE_SIZE_RATIO = {
     small: 0.145,
     medium: 0.2,
@@ -244,9 +243,6 @@ function startDragCandidate(event, piece) {
         isDragging: false
     };
 
-    if (event.pointerId !== undefined) {
-        event.currentTarget.setPointerCapture?.(event.pointerId);
-    }
 }
 
 function updateDrag(event) {
@@ -280,7 +276,6 @@ function beginDrag(point) {
     document.body.classList.add("is-dragging");
     document.body.appendChild(dragState.ghost);
     moveDragGhost(point.x, point.y);
-    render();
 }
 
 function createDragGhost(piece) {
@@ -402,11 +397,6 @@ function getEventPoint(event) {
 }
 
 function addDragStartListener(element, handler) {
-    if (SUPPORTS_POINTER_EVENTS) {
-        element.addEventListener("pointerdown", handler);
-        return;
-    }
-
     element.addEventListener("mousedown", handler);
     element.addEventListener("touchstart", handler, { passive: false });
 }
@@ -534,17 +524,11 @@ cells.forEach((cell, index) => {
     });
 });
 
-if (SUPPORTS_POINTER_EVENTS) {
-    window.addEventListener("pointermove", updateDrag, { passive: false });
-    window.addEventListener("pointerup", finishDrag);
-    window.addEventListener("pointercancel", cancelDrag);
-} else {
-    window.addEventListener("mousemove", updateDrag, { passive: false });
-    window.addEventListener("mouseup", finishDrag);
-    window.addEventListener("touchmove", updateDrag, { passive: false });
-    window.addEventListener("touchend", finishDrag);
-    window.addEventListener("touchcancel", cancelDrag);
-}
+window.addEventListener("mousemove", updateDrag, { passive: false });
+window.addEventListener("mouseup", finishDrag);
+window.addEventListener("touchmove", updateDrag, { passive: false });
+window.addEventListener("touchend", finishDrag);
+window.addEventListener("touchcancel", cancelDrag);
 
 resetButton.addEventListener("click", resetGame);
 
