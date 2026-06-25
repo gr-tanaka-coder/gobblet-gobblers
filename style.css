@@ -26,6 +26,10 @@ body {
     text-align: center;
 }
 
+body.is-dragging {
+    user-select: none;
+}
+
 body::before {
     content: "";
     position: fixed;
@@ -216,7 +220,7 @@ body.is-disabled #resetButton {
     background: transparent;
     cursor: pointer;
     z-index: 1;
-    touch-action: manipulation;
+    touch-action: none;
 }
 
 .cell[data-index="0"] {
@@ -299,7 +303,7 @@ body.is-disabled #resetButton {
     border-radius: 8px;
     background: transparent;
     cursor: pointer;
-    touch-action: manipulation;
+    touch-action: none;
 }
 
 .piece-slot-empty {
@@ -316,6 +320,15 @@ body.is-disabled #resetButton {
     pointer-events: none;
     transform: translateY(var(--piece-offset-y, 0));
     filter: drop-shadow(0 8px 5px rgba(0, 0, 0, 0.24));
+}
+
+.drag-ghost {
+    position: fixed;
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0.92;
+    transform: translate(-50%, -50%);
+    filter: drop-shadow(0 14px 10px rgba(0, 0, 0, 0.28));
 }
 
 .piece-small {

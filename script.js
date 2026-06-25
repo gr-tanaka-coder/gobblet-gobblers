@@ -33,6 +33,8 @@ const WIN_LINES = [
 let currentPlayer = "blue";
 let gameOver = false;
 let selectedPiece = null;
+let dragState = null;
+let suppressNextClick = false;
 
 const board = Array.from({ length: 9 }, () => []);
 let bluePieces = createReservePieces("blue", 0);
@@ -45,6 +47,12 @@ const cells = document.querySelectorAll(".cell");
 const turnDisplay = document.querySelector("#turn");
 const resetButton = document.querySelector("#resetButton");
 const winnerMessage = document.querySelector("#winnerMessage");
+const DRAG_THRESHOLD = 8;
+const BOARD_PIECE_SIZE_RATIO = {
+    small: 0.145,
+    medium: 0.2,
+    large: 0.255
+};
 
 function createReservePieces(player, startId) {
     return ["small", "small", "medium", "medium", "large", "large"].map((size, index) => ({
@@ -110,9 +118,21 @@ function drawReservePieces(area, pieces) {
             button.tabIndex = -1;
         } else {
             button.appendChild(createPieceImage(piece, { selected: isSelected }));
+            button.addEventListener("pointerdown", (event) => {
+                startDragCandidate(event, {
+                    source: "reserve",
+                    player: piece.player,
+                    id: piece.id,
+                    size: piece.size
+                });
+            });
         }
 
         button.addEventListener("click", () => {
+            if (consumeSuppressedClick()) {
+                return;
+            }
+
             selectReservePiece(piece);
         });
 
@@ -136,6 +156,10 @@ function selectReservePiece(piece) {
 }
 
 function handleCellClick(index) {
+    if (consumeSuppressedClick()) {
+        return;
+    }
+
     if (gameOver) {
         return;
     }
@@ -174,6 +198,154 @@ function selectBoardPiece(index) {
     };
 
     render();
+}
+
+function startBoardDragCandidate(event, index) {
+    const stack = board[index];
+
+    if (stack.length === 0) {
+        return;
+    }
+
+    const topPiece = stack[stack.length - 1];
+    if (topPiece.player !== currentPlayer) {
+        return;
+    }
+
+    startDragCandidate(event, {
+        source: "board",
+        player: topPiece.player,
+        index,
+        id: topPiece.id,
+        size: topPiece.size
+    });
+}
+
+function startDragCandidate(event, piece) {
+    if (gameOver || piece.player !== currentPlayer || event.button > 0 || event.isPrimary === false) {
+        return;
+    }
+
+    dragState = {
+        piece,
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        ghost: null,
+        isDragging: false
+    };
+
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+}
+
+function updateDrag(event) {
+    if (dragState === null || event.pointerId !== dragState.pointerId) {
+        return;
+    }
+
+    const distanceX = event.clientX - dragState.startX;
+    const distanceY = event.clientY - dragState.startY;
+    const distance = Math.hypot(distanceX, distanceY);
+
+    if (!dragState.isDragging && distance < DRAG_THRESHOLD) {
+        return;
+    }
+
+    if (!dragState.isDragging) {
+        beginDrag(event);
+    }
+
+    moveDragGhost(event.clientX, event.clientY);
+    event.preventDefault();
+}
+
+function beginDrag(event) {
+    dragState.isDragging = true;
+    suppressNextClick = true;
+    selectedPiece = { ...dragState.piece };
+    dragState.ghost = createDragGhost(dragState.piece);
+    document.body.classList.add("is-dragging");
+    document.body.appendChild(dragState.ghost);
+    moveDragGhost(event.clientX, event.clientY);
+    render();
+}
+
+function createDragGhost(piece) {
+    const ghost = createPieceImage(piece);
+    const boardSize = boardElement.getBoundingClientRect().width;
+    const pieceSize = boardSize * BOARD_PIECE_SIZE_RATIO[piece.size];
+
+    ghost.classList.add("drag-ghost");
+    ghost.style.setProperty("--piece-size", `${pieceSize}px`);
+
+    return ghost;
+}
+
+function moveDragGhost(x, y) {
+    if (dragState?.ghost === null) {
+        return;
+    }
+
+    dragState.ghost.style.left = `${x}px`;
+    dragState.ghost.style.top = `${y}px`;
+}
+
+function finishDrag(event) {
+    if (dragState === null || event.pointerId !== dragState.pointerId) {
+        return;
+    }
+
+    const wasDragging = dragState.isDragging;
+
+    if (wasDragging) {
+        const cell = findDropCell(event.clientX, event.clientY);
+
+        if (cell !== null && canPlaceOnCell(Number(cell.dataset.index))) {
+            moveSelectedPieceTo(Number(cell.dataset.index));
+            finishTurn();
+        } else {
+            selectedPiece = null;
+            render();
+        }
+    }
+
+    cleanupDrag();
+
+    if (wasDragging) {
+        setTimeout(() => {
+            suppressNextClick = false;
+        }, 0);
+    }
+}
+
+function cancelDrag(event) {
+    if (dragState === null || event.pointerId !== dragState.pointerId) {
+        return;
+    }
+
+    selectedPiece = null;
+    cleanupDrag();
+    render();
+}
+
+function cleanupDrag() {
+    dragState?.ghost?.remove();
+    dragState = null;
+    document.body.classList.remove("is-dragging");
+}
+
+function findDropCell(x, y) {
+    const element = document.elementFromPoint(x, y);
+    return element?.closest?.(".cell") ?? null;
+}
+
+function consumeSuppressedClick() {
+    if (!suppressNextClick) {
+        return false;
+    }
+
+    suppressNextClick = false;
+    return true;
 }
 
 function canPlaceOnCell(index) {
@@ -290,10 +462,18 @@ function resetGame() {
 }
 
 cells.forEach((cell, index) => {
+    cell.addEventListener("pointerdown", (event) => {
+        startBoardDragCandidate(event, index);
+    });
+
     cell.addEventListener("click", () => {
         handleCellClick(index);
     });
 });
+
+window.addEventListener("pointermove", updateDrag, { passive: false });
+window.addEventListener("pointerup", finishDrag);
+window.addEventListener("pointercancel", cancelDrag);
 
 resetButton.addEventListener("click", resetGame);
 
